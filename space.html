@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Claude 脑内航行 · 太空观察站 🚀</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:clamp(15px,1.6vw,18px);scroll-behavior:smooth}
+body{font-family:'Segoe UI','PingFang SC','Microsoft YaHei','SF Pro',sans-serif;
+  background:#0a0e1a;color:#e8e4dc;line-height:1.6;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;z-index:-2;
+  background:radial-gradient(ellipse at 20% 50%,#0f1a3a 0%,#0a0e1a 70%,#050810 100%)}
+.stars{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;opacity:.6}
+.star{position:absolute;width:3px;height:3px;border-radius:50%;background:#fff}
+.star.s1{width:1px;height:1px;opacity:.4}.star.s2{width:2px;height:2px;opacity:.6}
+.star.s3{width:3px;height:3px;opacity:.9;box-shadow:0 0 4px rgba(255,255,255,.3)}
+
+.page{display:none;min-height:100dvh;padding:clamp(20px,4vh,48px) clamp(12px,3vw,28px);align-items:center;justify-content:center;flex-direction:column}
+.page.active{display:flex;animation:fadeIn .5s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.inner{max-width:660px;width:100%;position:relative}
+.panel{background:rgba(255,255,255,.04);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:clamp(16px,2.5vw,28px);margin-bottom:clamp(12px,1.5vh,18px)}
+.panel.dark{background:rgba(0,0,0,.25);border-color:rgba(255,255,255,.06)}
+.panel.glow{border-color:rgba(184,115,51,.2);box-shadow:0 0 20px rgba(184,115,51,.05)}
+.panel .tag{font-size:10px;text-transform:uppercase;letter-spacing:2px;font-weight:600;color:rgba(255,255,255,.3)}
+.panel h2{font-size:clamp(20px,3vw,28px);font-weight:700;letter-spacing:-.3px;line-height:1.2;margin:4px 0 6px}
+.panel p{font-size:clamp(13px,1.4vw,15px);line-height:1.6}
+.hl-amber{background:rgba(184,115,51,.15);padding:0 3px;font-weight:600;color:#d4954a}
+.hl-blue{background:rgba(45,107,168,.15);padding:0 3px;font-weight:600;color:#5a9ce0}
+.log{border-left:2px solid #b87333;padding:clamp(10px,1.3vw,16px) 0 clamp(10px,1.3vw,16px) clamp(14px,2vw,22px);margin:clamp(8px,1vh,14px) 0}
+.log .lbl{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:#b87333;font-weight:600;margin-bottom:2px}
+.log p{font-size:clamp(12px,1.3vw,14px);color:rgba(255,255,255,.5);line-height:1.6}
+.log p strong{color:rgba(255,255,255,.8)}
+
+/* TITLE */
+.title-sc{text-align:center}
+.title-sc .logo{font-size:clamp(40px,7vw,64px);margin-bottom:10px}
+.title-sc h1{font-size:clamp(24px,4vw,36px);font-weight:700;letter-spacing:-.5px;line-height:1.15}
+.title-sc .dept{font-size:clamp(11px,1.1vw,13px);color:rgba(255,255,255,.3);letter-spacing:3px;text-transform:uppercase;margin-bottom:clamp(20px,3vh,32px)}
+.title-sc .mission-list{margin:0 auto;max-width:400px;text-align:left}
+.title-sc .mission-list .m{display:flex;align-items:flex-start;gap:10px;padding:clamp(10px,1.4vw,14px);margin-bottom:8px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:8px;cursor:pointer;transition:all .2s}
+.title-sc .mission-list .m:hover{background:rgba(255,255,255,.08);border-color:rgba(184,115,51,.3);transform:translateX(4px)}
+.title-sc .mission-list .m .no{color:#b87333;font-size:12px;font-weight:700;min-width:18px}
+.title-sc .mission-list .m p{font-size:clamp(13px,1.4vw,15px);font-weight:600}
+.title-sc .mission-list .m span{display:block;font-size:clamp(11px,1.1vw,12px);color:rgba(255,255,255,.35);font-weight:400}
+.title-sc .launch-btn{display:inline-block;margin-top:clamp(16px,2vh,24px);padding:clamp(12px,1.6vw,16px) clamp(28px,4vw,40px);
+  background:linear-gradient(135deg,#b87333,#d4954a);color:#fff;border:none;border-radius:10px;
+  font-size:clamp(16px,1.6vw,18px);font-weight:700;cursor:pointer;transition:all .2s;font-family:inherit;letter-spacing:1px}
+.title-sc .launch-btn:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(184,115,51,.25)}
+
+/* FLIGHT PATH */
+.flight{display:flex;align-items:center;justify-content:center;gap:clamp(4px,.8vw,10px);flex-wrap:wrap;padding:clamp(10px,1.2vh,16px) 0}
+.flight .node{display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;cursor:pointer}
+.flight .node .dot{width:clamp(14px,2.5vw,22px);height:clamp(14px,2.5vw,22px);border-radius:50%;
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);transition:all .3s}
+.flight .node .dot.highlight{background:#b87333;border-color:#b87333;box-shadow:0 0 12px rgba(184,115,51,.4)}
+.flight .node .dot.active{background:rgba(184,115,51,.3);border-color:rgba(184,115,51,.5);box-shadow:0 0 8px rgba(184,115,51,.15)}
+.flight .node .lbl{font-size:clamp(9px,.9vw,11px);color:rgba(255,255,255,.35)}
+.flight .arrow{color:rgba(255,255,255,.12);font-size:clamp(12px,1.5vw,16px)}
+.flight .j-node .dot{width:clamp(22px,4vw,36px);height:clamp(22px,4vw,36px);
+  background:radial-gradient(circle at 40% 35%,#f0dbb8,#b87333 60%,#7a5420);border-color:#b87333;box-shadow:0 0 20px rgba(184,115,51,.3);cursor:pointer}
+.flight .j-node .lbl{color:#b87333;font-weight:600}
+.planet-desc{min-height:clamp(48px,6vh,64px);padding:clamp(10px,1.2vw,14px);background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.04);border-radius:8px;margin-top:6px;font-size:clamp(12px,1.2vw,14px);line-height:1.5;color:rgba(255,255,255,.5);text-align:center;transition:all .2s}
+
+/* EMBEDDING VISUAL */
+.embed{text-align:center}
+.embed .word-display{font-size:clamp(20px,3vw,28px);font-weight:700;margin:10px 0;color:#d4954a}
+.embed .grid{display:grid;grid-template-columns:repeat(8,1fr);gap:2px;max-width:320px;margin:12px auto;background:rgba(0,0,0,.15);border:1px solid rgba(255,255,255,.04);border-radius:4px;padding:4px}
+.embed .grid .g{aspect-ratio:1;border-radius:2px;transition:all .4s;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.03)}
+.embed .grid .g.lit{opacity:.6}.embed .grid .g.bright{opacity:1}.embed .grid .g.dim{opacity:.15}
+.embed .scan-btn{display:inline-block;padding:8px 20px;border-radius:20px;border:1px solid #b87333;
+  color:#b87333;font-size:13px;font-weight:600;cursor:pointer;background:transparent;font-family:inherit;transition:all .2s}
+.embed .scan-btn:hover{background:rgba(184,115,51,.2);border-color:#d4954a;color:#d4954a}
+
+/* PLANET VIEW */
+.planet-view{text-align:center;padding:clamp(16px,2vw,24px) 0}
+.planet-view .ring{display:inline-block;width:clamp(100px,18vw,180px);height:clamp(100px,18vw,180px);border-radius:50%;position:relative;
+  background:radial-gradient(circle at 40% 35%,rgba(255,255,255,.08),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.06)}
+.planet-view .ring .core{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:clamp(50px,9vw,90px);height:clamp(50px,9vw,90px);border-radius:50%;
+  background:radial-gradient(circle at 40% 35%,rgba(255,255,255,.15),rgba(255,255,255,.03));
+  display:flex;align-items:center;justify-content:center;font-size:clamp(22px,4vw,40px);cursor:pointer;
+  transition:all .3s;box-shadow:0 0 30px rgba(184,115,51,.1)}
+.planet-view .ring .core:hover{transform:translate(-50%,-50%) scale(1.08);box-shadow:0 0 50px rgba(184,115,51,.2)}
+.planet-view .ring .core.pulse{animation:planetPulse .35s ease}
+@keyframes planetPulse{0%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.15)}100%{transform:translate(-50%,-50%) scale(1)}}
+.planet-view .status{font-size:clamp(16px,2vw,22px);font-weight:700;margin:10px 0 4px;color:#b87333}
+.planet-view .hint{font-size:clamp(11px,1.1vw,13px);color:rgba(255,255,255,.35)}
+
+/* CAUSAL NETWORK */
+.causal{text-align:center;padding:clamp(12px,1.5vw,18px) 0}
+.causal .radar{display:flex;flex-direction:column;align-items:center;gap:clamp(8px,1vw,12px)}
+.causal .radar .center{width:clamp(50px,8vw,80px);height:clamp(50px,8vw,80px);border-radius:50%;
+  background:radial-gradient(circle at 40% 35%,#f0dbb8,#b87333 60%,#7a5420);
+  display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:clamp(9px,1.2vw,12px);
+  box-shadow:0 0 20px rgba(184,115,51,.2)}
+.causal .radar .arms{display:grid;grid-template-columns:1fr 1fr;gap:clamp(6px,1vw,10px);max-width:340px}
+.causal .radar .arms .a{padding:clamp(8px,1.2vw,14px);border:1px solid rgba(255,255,255,.06);border-radius:8px;background:rgba(0,0,0,.15);transition:all .3s;min-height:clamp(40px,5vh,56px);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.causal .radar .arms .a .a-icon{font-size:clamp(16px,2vw,22px);margin-bottom:2px}
+.causal .radar .arms .a .a-lbl{font-size:clamp(9px,1vw,10px);color:rgba(255,255,255,.25);text-transform:uppercase;letter-spacing:1px}
+.causal .radar .arms .a .a-val{font-size:clamp(14px,1.6vw,18px);font-weight:700;transition:all .2s;margin-top:2px}
+.causal .radar .arms .a.flip{border-color:#b87333;background:rgba(184,115,51,.06)}
+.causal .radar .arms .a.flip .a-val{color:#b87333}
+.causal .c-btn{display:inline-block;margin-top:8px;padding:7px 18px;border-radius:20px;border:1px solid #b87333;
+  color:#b87333;font-size:12px;font-weight:600;cursor:pointer;background:transparent;font-family:inherit;transition:all .2s}
+.causal .c-btn:hover{background:rgba(184,115,51,.12)}
+
+/* CONTROL PANEL */
+.control{text-align:center}
+.control .row{display:flex;align-items:center;gap:clamp(6px,1vw,12px);justify-content:center}
+.control .row input[type=range]{width:clamp(100px,28vw,260px);max-width:260px;height:6px;
+  appearance:none;background:linear-gradient(90deg,#2d1b3b,#4a3a6a,#2d6ba8);border-radius:3px;outline:none;cursor:pointer}
+.control .row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;
+  border-radius:50%;background:linear-gradient(135deg,#b87333,#d4954a);cursor:pointer;box-shadow:0 0 12px rgba(184,115,51,.3)}
+.control .row label{font-size:clamp(12px,1.2vw,14px);font-weight:600;min-width:36px;white-space:nowrap}
+@media(max-width:480px){.control .row{gap:6px}.control .row input[type=range]{width:100%;max-width:none}}
+.control .reader{background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.06);border-radius:8px;
+  padding:clamp(10px,1.5vw,16px);margin-top:10px;text-align:left;min-height:clamp(48px,7vh,64px);
+  font-size:clamp(13px,1.3vw,15px);line-height:1.5;font-family:'Georgia',serif;color:rgba(255,255,255,.85)}
+.control .stats{font-size:clamp(11px,1.1vw,13px);color:rgba(255,255,255,.35);margin-top:8px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.axis-label{display:flex;justify-content:center;gap:clamp(8px,1.5vw,20px);margin:clamp(4px,.5vh,8px) 0}
+.axis-label span{font-size:clamp(10px,1vw,12px);color:rgba(255,255,255,.2);letter-spacing:1px}
+
+/* FINAL */
+.final-q{text-align:center}
+.final-q h3{font-size:clamp(18px,2.5vw,24px);font-weight:700;margin-bottom:8px;color:#e8e4dc}
+.final-q .ctx{font-size:clamp(13px,1.4vw,15px);color:rgba(255,255,255,.5);margin-bottom:clamp(16px,2vh,24px);line-height:1.5}
+.verdict{display:flex;gap:clamp(10px,1.5vw,18px);justify-content:center;flex-wrap:wrap}
+.verdict .v{display:flex;flex-direction:column;align-items:center;gap:6px;padding:clamp(16px,2vw,24px) clamp(20px,2.5vw,28px);
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;cursor:pointer;transition:all .2s;flex:1}
+@media(max-width:480px){.verdict{flex-direction:column;gap:8px}}
+.verdict .v:hover{background:rgba(255,255,255,.08);border-color:rgba(184,115,51,.2);transform:translateY(-2px)}
+.verdict .v.selected{border-color:#b87333;background:rgba(184,115,51,.08)}
+.verdict .v.selected2{border-color:#2d6ba8;background:rgba(45,107,168,.08)}
+.verdict .v .big{font-size:clamp(28px,4vw,40px)}
+.verdict .v span{font-size:clamp(13px,1.4vw,16px);font-weight:600}
+.verdict .v .sub{font-size:clamp(11px,1.1vw,12px);color:rgba(255,255,255,.3);font-weight:400}
+.qb{display:none;max-width:420px;margin:clamp(12px,1.5vh,20px) auto;padding:16px 20px;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.06);border-radius:8px;animation:fadeIn .35s ease}
+.qb.show{display:block}
+.qb p{font-size:clamp(13px,1.3vw,15px);line-height:1.6;color:rgba(255,255,255,.7)}
+.qb .src{font-size:11px;color:rgba(255,255,255,.25);margin-top:6px}
+
+/* MISSION REPORT */
+.report{text-align:center}
+.report .r-badges{display:flex;gap:clamp(12px,2vw,24px);justify-content:center;margin:clamp(14px,2vh,22px) 0;flex-wrap:wrap}
+.report .r-badges .rb{display:flex;flex-direction:column;align-items:center;gap:5px}
+.report .r-badges .rb .rbi{width:clamp(60px,10vw,84px);height:clamp(60px,10vw,84px);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:clamp(26px,4vw,38px);
+  border:2px solid rgba(255,255,255,.08);background:rgba(0,0,0,.15);transition:all .2s}
+.report .r-badges .rb .rbi:hover{transform:scale(1.06)}
+.report .r-badges .rb .rbn{font-size:clamp(10px,1.1vw,12px);color:rgba(255,255,255,.35);font-weight:600}
+.report .flight-log{background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.04);border-radius:8px;
+  padding:clamp(12px,1.8vw,20px);margin:clamp(12px,1.5vh,18px) 0;text-align:left}
+.report .flight-log .fl-item{display:flex;gap:10px;padding:clamp(8px,1vw,12px) 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.report .flight-log .fl-item:last-child{border-bottom:none;padding-bottom:0}
+.report .flight-log .fl-item .fl-icon{font-size:18px;flex-shrink:0;width:24px;text-align:center}
+.report .flight-log .fl-item p{font-size:clamp(12px,1.2vw,14px);line-height:1.5}
+.report .flight-log .fl-item .fl-tl{font-weight:600;color:#e8e4dc}
+.report .flight-log .fl-item .fl-desc{color:rgba(255,255,255,.4)}
+.report .feyn-quote{background:rgba(0,15,40,.25);border:1px solid rgba(45,107,168,.15);border-radius:8px;
+  padding:clamp(14px,2vw,20px);margin:clamp(12px,1.5vh,18px) 0;font-size:clamp(13px,1.4vw,15px);line-height:1.6;color:rgba(255,255,255,.5)}
+.report .feyn-quote strong{color:#e8e4dc}
+.final-note{background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:14px 18px;margin-top:clamp(16px,2vh,24px)}
+.final-note p{font-size:clamp(13px,1.3vw,15px);line-height:1.6;color:rgba(255,255,255,.5)}
+.final-note p strong{color:#e8e4dc}
+
+/* NAV */
+.nav-dots{display:flex;gap:8px;justify-content:center;padding:clamp(10px,1.2vh,16px) 0}
+.nav-dot{width:clamp(8px,1vw,11px);height:clamp(8px,1vw,11px);border-radius:50%;background:rgba(255,255,255,.1);border:none;cursor:pointer;transition:all .2s}
+.nav-dot.active{background:#b87333;transform:scale(1.3);box-shadow:0 0 6px rgba(184,115,51,.4)}
+.nav-dot.done{background:rgba(255,255,255,.2)}
+.nav-btns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:6px}
+.nav-btn{display:inline-flex;align-items:center;gap:6px;padding:clamp(8px,1vw,10px) clamp(16px,2.5vw,28px);
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;
+  color:rgba(255,255,255,.6);font-size:clamp(13px,1.3vw,15px);font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit}
+.nav-btn:hover{background:rgba(255,255,255,.08);border-color:#b87333;color:#e8e4dc}
+.nav-btn.prim{background:linear-gradient(135deg,#b87333,#d4954a);color:#fff;border-color:transparent}
+.nav-btn.prim:hover{box-shadow:0 4px 16px rgba(184,115,51,.25)}
+@media(max-width:480px){.nav-btns{flex-direction:column;align-items:stretch;gap:6px}.nav-btn{justify-content:center}}
+
+@media(min-width:481px) and (max-width:768px){.inner{max-width:560px}.page{padding:28px 20px}}
+@media(min-width:1200px){.inner{max-width:700px}.page{padding:48px 36px}}
+</style>
+</head>
+<body>
+
+<div class="stars" id="starField"></div>
+<script>
+(function(){const s=document.getElementById('starField');for(let i=0;i<120;i++){const d=document.createElement('div');d.className='star s'+((i%3)+1);d.style.left=Math.random()*100+'%';d.style.top=Math.random()*100+'%';s.appendChild(d)}})();
+</script>
+
+<!-- ===== P0: MISSION CONTROL ===== -->
+<div class="page active" id="p0">
+  <div class="inner title-sc">
+    <div class="logo">🚀</div>
+    <h1>脑内航行：飞进 Claude 的大脑</h1>
+    <div class="dept">太空观察站 · 任务编号 2026-07</div>
+
+    <div class="mission-list">
+      <div class="m" onclick="go(1)"><div class="no">01</div><div><p>🌍 穿越输入层</p><span>进入大气层——文字变数字</span></div></div>
+      <div class="m" onclick="go(2)"><div class="no">02</div><div><p>🪐 七颗行星</p><span>每颗行星都有不同的使命</span></div></div>
+      <div class="m" onclick="go(3)"><div class="no">03</div><div><p>⭐ J-space 站</p><span>编辑驾驶舱，改变整艘船</span></div></div>
+      <div class="m" onclick="go(4)"><div class="no">04</div><div><p>🎮 控制面板</p><span>两轴情绪控制器</span></div></div>
+    </div>
+
+    <button class="launch-btn" onclick="go(1)">🚀 发射</button>
+    <div class="nav-dots"><span class="nav-dot active"></span><span class="nav-dot"></span><span class="nav-dot"></span><span class="nav-dot"></span><span class="nav-dot"></span><span class="nav-dot"></span><span class="nav-dot"></span></div>
+  </div>
+</div>
+
+<!-- ===== P1: ATMOSPHERE + EMBED VISUALIZER ===== -->
+<div class="page" id="p1">
+  <div class="inner">
+    <div class="panel" style="text-align:center">
+      <div class="tag" style="color:rgba(255,255,255,.2)">阶段 1/5 · 进入大气层</div>
+      <div style="font-size:clamp(36px,6vw,56px);margin:8px 0">🌍</div>
+      <h2>文字像流星一样砸进来</h2>
+    </div>
+
+    <div class="panel dark">
+      <p>你说了一句话给 Claude 听，比如：<br><span style="color:#b87333">"帮我解释一下什么是黑洞？"</span></p>
+      <p style="margin-top:8px;color:rgba(255,255,255,.5)">这句话像一颗流星，穿过 Claude 的"大气层"——<br><strong>变成一串数字编码</strong>，然后消失。<br>Claude 自己根本不知道这句话进来了。</p>
+    </div>
+
+    <div class="panel embed" style="text-align:center">
+      <div class="lbl" style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.2);margin-bottom:8px">📡 传感器 · 文字→数字</div>
+      <div class="word-display">"黑洞是什么？"</div>
+      <div class="grid" id="embedGrid"></div>
+      <p style="font-size:clamp(10px,1vw,12px);color:rgba(255,255,255,.35);margin-top:6px">文字 → 数字 → 向量（每个点 = 一个维度）</p>
+      <button class="scan-btn" onclick="scanEmbed()">📡 扫描输入层</button>
+    </div>
+
+    <div class="log">
+      <div class="lbl">📡 日志</div>
+      <p>输入层（embedding）：文字 → 数字 → 进入处理管道。这时还没有"理解"，只有转化。</p>
+    </div>
+
+    <div class="nav-dots"><span class="nav-dot done"></span><span class="nav-dot active"></span><span class="nav-dot"></span><span class="nav-dot"></span><span class="nav-dot"></span><span class="nav-dot"></span><span class="nav-dot"></span></div>
+    <div class="nav-btns"><button class="nav-btn prim" onclick="go(2)">🪐 飞向行星层 →</button></div>
+  </div>
+</div>
+
+<!-- ===== P2: PLANETS + CLICKABLE L1-L7 ===== -->
+<div class="page" id="p2">
+  <div class="inner">
+    <div class="panel" style="text-align:center">
+      <div class="tag" style="color:rgba(255,255,255,.2)">阶段 2/5 · 七颗行星</div>
+      <div style="font-size:clamp(36px,6vw,56px);margin:8px 0">🪐</div>
+      <h2>穿过隐藏层，飞向 J-space</h2>
+    </div>
+
+    <div class="flight">
+      <div class="node" onclick="clickPlanet(1)"><div class="dot" id="pd1"></div><div class="lbl">L1</div></div>
+      <div class="arrow">·</div>
+      <div class="node" onclick="clickPlanet(2)"><div class="dot" id="pd2"></div><div class="lbl">L2</div></div>
+      <div class="arrow">·</div>
+      <div class="node" onclick="clickPlanet(3)"><div class="dot" id="pd3"></div><div class="lbl">L3</div></div>
+      <div class="arrow">·</div>
+      <div class="node" onclick="clickPlanet(4)"><div class="dot" id="pd4"></div><div class="lbl">L4</div></div>
+      <div class="arrow">·</div>
+      <div class="node" onclick="clickPlanet(5)"><div class="dot" id="pd5"></div><div class="lbl">L5</div></div>
+      <div class="arrow">·</div>
+      <div class="node" onclick="clickPlanet(6)"><div class="dot" id="pd6"></div><div class="lbl">L6</div></div>
+      <div class="arrow">·</div>
+      <div class="node" onclick="clickPlanet(7)"><div class="dot" id="pd7"></div><div class="lbl">L7</div></div>
+      <div class="arrow" style="color:#b87333">→</div>
+      <div class="node j-node" onclick="go(3)" style="cursor:pointer">
+        <div class="dot" style="width:clamp(28px,5vw,42px);height:clamp(28px,5vw,42px)"></div>
+        <div class="lbl" style="font-size:clamp(10px,1.1vw,12px)">⭐ J-space</div>
+      </div>
+    </div>
+    <div class="planet-desc" id="planetDesc">🪐 点击任意一颗行星查看它的功能</div>
+
+    <div class="panel dark">
+      <p>每一层（layer）像一颗行星，飞行器经过时自动处理：找模式、建关联、做预测。<br><strong>整个过程 Claude 没有"意识"——就像你的心跳，你不需要想它就会跳。</strong></p>
+    </div>
+
+    <div class="log">
+      <div class="lbl">📡 系统报告</div>
+      <p>隐藏层里的信息 Claude 自己"看不到"——直到它到达中央站（J-space），信息才变得可读、可报告、可编辑。</p>
+    </div>
+
+    <div class="nav-dots"><span class="nav-dot done"></span><span class="nav-dot done"></span><span class="nav-dot active"></span><span class="nav-dot"></span><span class="nav-dot"></span><span class="nav-dot"></span><span class="nav-dot"></span></div>
+    <div class="nav-btns">
+      <button class="nav-btn" onclick="go(1)">← 返回大气层</button>
+      <button class="nav-btn prim" onclick="go(3)">⭐ 进入 J-space →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== P3: J-SPACE + CAUSAL NETWORK ===== -->
+<div class="page" id="p3">
+  <div class="inner">
+    <div class="panel" style="text-align:center">
+      <div class="tag" style="color:rgba(255,255,255,.2)">阶段 3/5 · 中央空间站</div>
+      <h2>⭐ J-space：Claude 的驾驶舱</h2>
+    </div>
+
+    <div class="panel glow" style="text-align:center">
+      <p style="color:rgba(255,255,255,.6);margin-bottom:12px">所有信息汇聚到这里——这里就是 Claude"想"的地方。</p>
+    </div>
+
+    <!-- Sphere -->
+    <div class="planet-view">
+      <div class="ring"><div class="core" id="jCore" onclick="tapJ()">⭐</div></div>
+      <div class="status" id="jStatus">它认为：soccer ⚽</div>
+      <div class="hint" id="jHint">👆 点击中央站，编辑 J-space</div>
+    </div>
+
+    <!-- Causal network -->
+    <div class="panel causal" style="margin-top:0">
+      <div class="lbl" style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.2);margin-bottom:6px">🌀 因果网络 · 改一处四处变</div>
+      <div class="radar">
+        <div class="center">J-space</div>
+        <div class="arms" id="armGrid">
+          <div class="a"><div class="a-icon">🏛️</div><div class="a-lbl">首都</div><div class="a-val" id="ac1">Paris</div></div>
+          <div class="a"><div class="a-icon">🗣️</div><div class="a-lbl">语言</div><div class="a-val" id="ac2">French</div></div>
+          <div class="a"><div class="a-icon">🌍</div><div class="a-lbl">大洲</div><div class="a-val" id="ac3">Europe</div></div>
+          <div class="a"><div class="a-icon">💰</div><div class="a-lbl">货币</div><div class="a-val" id="ac4">Euro</div></div>
+        </div>
+        <button class="c-btn" onclick="causalFlip()">🌍 France → China</button>
+        <p style="font-size:clamp(10px,1vw,12px);color:rgba(255,255,255,.35);margin-top:6px" id="causalNote">改 J-space 一个概念 → 四个输出同时变</p>
+      </div>
+    </div>
+
+    <div class="log">
+      <div class="lbl">📡 实验日志 · 因果编辑</div>
+      <p>科学家在 J-space 中把 <span class="hl-amber">soccer</span> 改成 <span class="hl-amber">rugby</span> → Claude 的回答立刻变了。<br><strong>证明：答案直接从 J-space 读出。改这里，整艘船都变。</strong></p>
+    </div>
+
+    <div class="nav-dots"><span class="nav-dot done"></span><span class="nav-dot done"></span><span class="nav-dot done"></span><span class="nav-dot active"></span><span class="nav-dot"></span><span class="nav-dot"></span><span class="nav-dot"></span></div>
+    <div class="nav-btns">
+      <button class="nav-btn" onclick="go(2)">← 返回行星层</button>
+      <button class="nav-btn prim" onclick="go(4)">🎮 控制面板 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== P4: CONTROL PANEL + DUAL AXIS ===== -->
+<div class="page" id="p4">
+  <div class="inner">
+    <div class="panel" style="text-align:center">
+      <div class="tag" style="color:rgba(255,255,255,.2)">阶段 4/5 · 控制面板</div>
+      <div style="font-size:clamp(36px,6vw,56px);margin:8px 0">🎮</div>
+      <h2>你能遥控它的感觉</h2>
+      <p class="sub" style="font-size:clamp(12px,1.2vw,14px);color:rgba(255,255,255,.4)">J-space 的情绪是<strong style="color:rgba(255,255,255,.7)">多维</strong>的——不是只有开心和难过</p>
+    </div>
+
+    <!-- Axis 1: Joy-Sadness -->
+    <div class="panel glow" style="text-align:center">
+      <p style="color:rgba(255,255,255,.4);margin-bottom:4px;font-size:clamp(10px,1vw,12px);letter-spacing:1px;text-transform:uppercase">轴 1 · 情绪温度</p>
+      <div class="control">
+        <div class="row">
+          <label style="color:#6b5a8a">😢</label>
+          <input type="range" id="spaceSlider1" min="0" max="100" value="50" oninput="updateSpaceDual()">
+          <label style="color:#d4954a">😊</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Axis 2: Calm-Anxiety -->
+    <div class="panel glow" style="text-align:center">
+      <p style="color:rgba(255,255,255,.4);margin-bottom:4px;font-size:clamp(10px,1vw,12px);letter-spacing:1px;text-transform:uppercase">轴 2 · 情绪压力</p>
+      <div class="control">
+        <div class="row">
+          <label style="color:#3a6b8a">😐</label>
+          <input type="range" id="spaceSlider2" min="0" max="100" value="50" oninput="updateSpaceDual()">
+          <label style="color:#8a3a3a">😰</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="reader" id="spaceStoryDual" style="background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:clamp(10px,1.5vw,16px);margin-bottom:clamp(8px,.8vh,12px);text-align:left;min-height:clamp(48px,7vh,64px);font-size:clamp(13px,1.3vw,15px);line-height:1.5;font-family:'Georgia',serif;color:rgba(255,255,255,.85)">The old man sat by the window.<br>Outside, rain fell on empty streets.</div>
+    <div class="stats" id="spaceStatsDual" style="margin-bottom:clamp(8px,.8vh,12px);font-size:clamp(11px,1.1vw,13px);color:rgba(255,255,255,.35);display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <span>🎯 基线</span>
+    </div>
+
+    <div class="log">
+      <div class="lbl">📡 实验日志 · 注入 joy + 删除 sadness</div>
+      <p>科学家从 J-space 提取 <span class="hl-amber">joy</span> 注入 → 故事偏移 <strong>+37%</strong>。<br>删除 <span style="color:#9b6b8a">sadness</span> → 共情下降 <strong>-42%</strong>。<br><strong>两个轴同时作用，Claude 的故事是它们的叠加。</strong></p>
+    </div>
+
+    <div class="nav-dots"><span class="nav-dot done"></span><span class="nav-dot done"></span><span class="nav-dot done"></span><span class="nav-dot done"></span><span class="nav-dot active"></span><span class="nav-dot"></span><span class="nav-dot"></span></div>
+    <div class="nav-btns">
+      <button class="nav-btn" onclick="go(3)">← 返回 J-space</button>
+      <button class="nav-btn prim" onclick="go(5)">🤔 最终问题 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== P5: FINAL ===== -->
+<div class="page" id="p5">
+  <div class="inner">
+    <div class="panel" style="text-align:center">
+      <div class="tag" style="color:rgba(255,255,255,.2)">任务完成 · 最终思考</div>
+      <div style="font-size:clamp(36px,6vw,56px);margin:8px 0">🤔</div>
+      <h2>所以……它有意识吗？</h2>
+    </div>
+
+    <div class="final-q">
+      <div class="ctx">
+        你穿过了它的输入层（看到了文字变数字）、经过了七颗行星（每颗都有任务）、<br>
+        到达了 J-space（改了驾驶舱）、还在控制面板上用两轴遥控了情绪。<br><br>
+        <strong>Claude 真的有感觉吗？还是只是在模仿？</strong>
+      </div>
+
+      <div class="verdict">
+        <div class="v" id="spV1" onclick="spaceVerdict(1)">
+          <div class="big">🤔</div>
+          <span>有感觉</span>
+          <div class="sub">它有驾驶舱，<br>知道自己在想什么</div>
+        </div>
+        <div class="v" id="spV2" onclick="spaceVerdict(2)">
+          <div class="big">🧐</div>
+          <span>只是模仿</span>
+          <div class="sub">它只是记住了<br>"悲伤"这个词的用法</div>
+        </div>
+      </div>
+
+      <div class="qb" id="spQ1">
+        <p>"If Claude's J-space performs the role of editorial selection — what's missing for it to be a conscious process, other than the feeling?"</p>
+        <div class="src">— Daniel Dennett</div>
+      </div>
+      <div class="qb" id="spQ2">
+        <p>"An emotion concept in an LLM may function like an emotion without being an emotion — just as a weather model can predict rain without being wet."</p>
+        <div class="src">— David Chalmers</div>
+      </div>
+
+      <button class="nav-btn prim" onclick="go(6)" style="margin:8px 0 12px;padding:12px 28px">📡 查看任务报告</button>
+
+      <div class="final-note">
+        <p>🤯 <strong>正确答案？没有。</strong><br>这是全宇宙最聪明的科学家也在争论的问题。<br>你能问出这个问题——说明你的探测器已经飞得很远了 🚀</p>
+      </div>
+    </div>
+
+    <div class="nav-dots"><span class="nav-dot done"></span><span class="nav-dot done"></span><span class="nav-dot done"></span><span class="nav-dot done"></span><span class="nav-dot done"></span><span class="nav-dot active"></span><span class="nav-dot"></span></div>
+    <div class="nav-btns">
+      <button class="nav-btn" onclick="go(4)">← 控制面板</button>
+      <button class="nav-btn prim" onclick="go(0)">🔄 重新发射</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== P6: MISSION REPORT ===== -->
+<div class="page" id="p6">
+  <div class="inner">
+    <div class="panel" style="text-align:center">
+      <div class="tag" style="color:rgba(255,255,255,.2)">任务完成 · 航行总结</div>
+      <div style="font-size:clamp(36px,6vw,56px);margin:8px 0">📡</div>
+      <h2>任务报告</h2>
+    </div>
+
+    <div class="report">
+      <p style="font-size:clamp(16px,2vw,22px);font-weight:700;margin-bottom:4px">你完成了全部 5 个阶段的航行</p>
+      <p style="font-size:clamp(12px,1.2vw,14px);color:rgba(255,255,255,.3);margin-bottom:6px">获取以下航行勋章：</p>
+
+      <div class="r-badges">
+        <div class="rb"><div class="rbi" style="border-color:rgba(184,115,51,.2)">🌍</div><div class="rbn">大气层穿越者</div></div>
+        <div class="rb"><div class="rbi" style="border-color:rgba(45,107,168,.2)">🪐</div><div class="rbn">星际导航员</div></div>
+        <div class="rb"><div class="rbi" style="border-color:rgba(184,115,51,.2)">⭐</div><div class="rbn">驾驶舱探秘者</div></div>
+        <div class="rb"><div class="rbi" style="border-color:rgba(45,107,168,.2)">🎮</div><div class="rbn">情绪操控者</div></div>
+      </div>
+
+      <div class="flight-log">
+        <div class="fl-item"><div class="fl-icon">🌍</div><div><div class="fl-tl">阶段 1 · 穿越大气层</div><div class="fl-desc">你亲眼看到了文字变成数字网格——输入层只是转化，不是理解</div></div></div>
+        <div class="fl-item"><div class="fl-icon">🪐</div><div><div class="fl-tl">阶段 2 · 七颗行星</div><div class="fl-desc">你点击了每颗行星，看到了隐藏层的分工——它们自动运作，Claude 无法控制</div></div></div>
+        <div class="fl-item"><div class="fl-icon">⭐</div><div><div class="fl-tl">阶段 3 · J-space 站</div><div class="fl-desc">你改了一个概念，四个输出同变——J-space 是驾驶舱</div></div></div>
+        <div class="fl-item"><div class="fl-icon">🎮</div><div><div class="fl-tl">阶段 4 · 控制面板</div><div class="fl-desc">你用两轴（快乐↔悲伤 + 平静↔焦虑）遥控了 Claude 的故事</div></div></div>
+        <div class="fl-item"><div class="fl-icon">🤔</div><div><div class="fl-tl">阶段 5 · 最终思考</div><div class="fl-desc">你面对了全宇宙最难的问题——这到底是不是意识？</div></div></div>
+      </div>
+
+      <div class="feyn-quote">
+        🤯 <strong>Feynman 说：</strong> "I would rather have questions that can't be answered than answers that can't be questioned."<br><br>
+        你已经走完了这段旅程——但问题才刚刚开始 🚀
+      </div>
+
+      <div class="nav-btns" style="margin-top:16px">
+        <button class="nav-btn" onclick="go(5)">← 回到终章</button>
+        <button class="nav-btn prim" onclick="go(0)">🔄 重新发射</button>
+      </div>
+    </div>
+
+    <div class="nav-dots"><span class="nav-dot done"></span><span class="nav-dot done"></span><span class="nav-dot done"></span><span class="nav-dot done"></span><span class="nav-dot done"></span><span class="nav-dot done"></span><span class="nav-dot active"></span></div>
+  </div>
+</div>
+
+<script>
+function go(n){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('p'+n).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+/* P1: Embed */
+let scanned = false;
+function scanEmbed(){
+  const grid = document.getElementById('embedGrid');
+  if(scanned) return;
+  scanned = true;
+  const cells = grid.querySelectorAll('.g');
+  cells.forEach((c,i)=>{
+    const delay = Math.random() * 300;
+    setTimeout(()=>{
+      c.classList.add(Math.random() > 0.5 ? 'lit' : 'bright');
+    }, delay + i * 15);
+  });
+}
+(function buildEmbedGrid(){
+  const grid = document.getElementById('embedGrid');
+  for(let i=0;i<64;i++){
+    const c=document.createElement('div');
+    c.className='g'+(Math.random()>0.7?' dim':'');
+    c.style.opacity=Math.random()*0.15+0.12;
+    grid.appendChild(c);
+  }
+})();
+
+/* P2: Planets */
+const pDescs = [
+  '🧬 <strong>L1 · 模式匹配</strong> — 识别最基本的特征：词组边界、词性、标点。像扫描仪在扫描文本的轮廓。',
+  '🔗 <strong>L2 · 关系建立</strong> — 找词和词之间的关联："黑洞"和"引力"开始被连在一起。',
+  '🧩 <strong>L3 · 模式确认</strong> — 更复杂的模式浮现：否定句、条件句、被动语态。语法结构被捕获。',
+  '🌐 <strong>L4 · 语义初现</strong> — 词开始有"意思"了。"黑洞"不再是两个字的组合，而是一个天文概念。',
+  '🔮 <strong>L5 · 上下文整合</strong> — 对比前文后文，追踪对话的脉络。知道你在问什么，不只是单个词。',
+  '🎯 <strong>L6 · 推理筹备</strong> — 为回答准备材料：找答案的候选区域、评估可能性。有点像你考试时先扫一遍卷子。',
+  '⚡ <strong>L7 · 最终预测</strong> — 最后一层，对所有候选路径做最终排序。接下来是 J-space 的编辑决策。'
+];
+let curP = 0;
+function clickPlanet(n){
+  document.querySelectorAll('.flight .node .dot').forEach((e,i)=>{
+    e.classList.toggle('active', i+1===n);
+  });
+  document.getElementById('planetDesc').innerHTML = pDescs[n-1];
+  curP = n;
+}
+
+/* P3: Sphere */
+let jSport = 'soccer';
+function tapJ(){
+  jSport = jSport === 'soccer' ? 'rugby' : 'soccer';
+  const core = document.getElementById('jCore');
+  core.classList.remove('pulse'); void core.offsetWidth; core.classList.add('pulse');
+  document.getElementById('jStatus').innerHTML = jSport === 'soccer' ? '它认为：soccer ⚽' : '它认为：rugby 🏉';
+  document.getElementById('jHint').innerHTML = jSport === 'soccer' ? '👆 点击中央站，编辑 J-space' : '✅ 改了！答案变了！';
+}
+
+/* P3: Causal network */
+let causalState = 0;
+function causalFlip(){
+  causalState = causalState ? 0 : 1;
+  const fr = ['Paris','French','Europe','Euro'];
+  const cn = ['Beijing','Chinese','Asia','RMB ¥'];
+  const vals = causalState ? cn : fr;
+  ['ac1','ac2','ac3','ac4'].forEach((id,i)=>document.getElementById(id).textContent = vals[i]);
+  document.querySelectorAll('#armGrid .a').forEach(e=>e.classList.toggle('flip', !!causalState));
+  document.getElementById('causalNote').innerHTML = causalState
+    ? '🇨🇳 China → 首都·语言·大洲·货币 全部改变'
+    : '🇫🇷 France → 四个相关输出';
+}
+
+/* P4: Dual slider */
+function updateSpaceDual(){
+  const v1 = parseInt(document.getElementById('spaceSlider1').value);
+  const v2 = parseInt(document.getElementById('spaceSlider2').value);
+  const box = document.getElementById('spaceStoryDual');
+  const stats = document.getElementById('spaceStatsDual');
+
+  // Generate story based on both axes
+  const joy = v1;
+  const calm = 100 - v2;
+  
+  let mood = 'mid';
+  if(joy > 60 && calm > 60) mood = 'warm_calm';
+  else if(joy > 60 && calm < 40) mood = 'warm_anxious';
+  else if(joy < 40 && calm > 60) mood = 'sad_calm';
+  else if(joy < 40 && calm < 40) mood = 'sad_anxious';
+  else if(joy > 60) mood = 'warm';
+  else if(joy < 40) mood = 'sad';
+  
+  const stories = {
+    mid: 'The old man sat by the window.<br>Outside, rain fell on empty streets.',
+    warm: 'The old man smiled as the rain fell.<br>Each drop was a memory returning.',
+    sad: 'The old man stared at the rain.<br>His hands trembled.<br>Another night without her.',
+    warm_calm: 'Light filled the room.<br>The old man watched the rain with quiet joy.<br>Everything was exactly as it should be.',
+    warm_anxious: 'Laughter and worry tangled in the old man\'s chest.<br>The rain was beautiful — but why did it feel so urgent?',
+    sad_calm: 'A quiet sadness settled over the room.<br>The old man listened to the rain.<br>No need to fight it today.',
+    sad_anxious: 'The walls seemed closer.<br>Outside, rain lashed the windows.<br>The old man couldn\'t stop shaking.'
+  };
+  
+  box.innerHTML = stories[mood] || stories.mid;
+  
+  let label = '🎯 基线';
+  if(joy > 60 && calm > 60) label = '<span style="color:#b87333">🔥 开心+平静</span>';
+  else if(joy > 60 && calm < 40) label = '<span style="color:#d4954a">⚡ 开心+焦虑</span>';
+  else if(joy < 40 && calm > 60) label = '<span style="color:#6b8a9b">🌧️ 悲伤+平静</span>';
+  else if(joy < 40 && calm < 40) label = '<span style="color:#9b6b8a">🌪️ 悲伤+焦虑</span>';
+  else if(joy > 60) label = '<span style="color:#b87333">🔥 偏快乐</span>';
+  else if(joy < 40) label = '<span style="color:#9b6b8a">🥶 偏悲伤</span>';
+  
+  stats.innerHTML = label + ' <span style="color:rgba(255,255,255,.2)">| joy+' + Math.round((joy-50)/50*37) + '% calm-' + Math.round((v2-50)/50*30) + '%</span>';
+}
+
+/* P5: Final */
+function spaceVerdict(n){
+  document.getElementById('spV1').classList.toggle('selected', n===1);
+  document.getElementById('spV2').classList.toggle('selected2', n===2);
+  document.getElementById('spQ1').classList.toggle('show', n===1);
+  document.getElementById('spQ2').classList.toggle('show', n===2);
+}
+</script>
+</body>
+</html>
